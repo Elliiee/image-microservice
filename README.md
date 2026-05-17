@@ -1,26 +1,26 @@
-#### demo react frontend App.js is in /demo-react folder
+#### --demo react frontend App.js is in /demo-react folder
 
-#### put this in your own react frontend should show the demo
+#### --put this in your own react frontend should show the demo
 
-#### Create image-microservice:
+#### --Create image-microservice:
 
-#### Initialize Node.js project
+#### --Initialize Node.js project:
 
 npm init -y
 
-#### Install the dependencies
+#### --Install the dependencies:
 
 npm install express cors multer sharp uuid
 
-#### Create server.js file
+#### --Create server.js file:
 
 touch server.js
 
-#### install nodemon as a dev dependency
+#### --install nodemon as a dev dependency:
 
 npm install --save-dev nodemon
 
-#### upudate package.json
+#### --upudate package.json:
 
 "scripts": {
 "start": "node server.js",
