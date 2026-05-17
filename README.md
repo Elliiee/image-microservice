@@ -31,7 +31,7 @@ npm install --save-dev nodemon
 
 ## Description
 
-This microservice allows users to upload, retrieve, list, and delete images through HTTP requests. Uploaded images are stored in the uploads folder and image metadata is stored in memory.
+This microservice allows users to upload, retrieve, and delete images through HTTP requests. Uploaded images are stored in the uploads folder and image metadata is stored in memory.
 
 ## How to Request Data
 
