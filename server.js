@@ -9,11 +9,10 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// Middleware - functions that run between receiving a request and sending a response 
-app.use(cors()); // allows frontend requests from backend without blocking by browser security policy
-app.use(express.json()); // automatically parses json from request bodies and attaches to req.body
-app.use('/images', express.static('uploads')); // returns the actual .jpg file from uploads/ folder 
-                                            // url pattern: /images/filename (serves from uploads folder)
+// Middleware
+app.use(cors()); 
+app.use(express.json()); 
+app.use('/images', express.static('uploads')); 
 
 // Ensure uploads directory exists 
 const uploadDir = path.join(__dirname, 'uploads');
@@ -21,8 +20,7 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configure multer(file upload middleware ) with memory storage, size limits, and file type validation
-// stores uploaded files as buffer objects in memory RAM instead of writing to disk
+// Configure multer
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage, 
@@ -38,11 +36,9 @@ const upload = multer({
     }
 });
 
-// In-memory storage for the easy project (use database otherwise)
-// creates an empty Map object for storing key-value pairs
+// In-memory hashmap storage for the easy project (use database otherwise)
 const imageMetadata = new Map();
 
-// health check 
 app.get('/health', (req, res) => {
     res.json({
         status: 'OK',
@@ -51,10 +47,7 @@ app.get('/health', (req, res) => {
         endpoints: ['POST /upload', 'GET /images/:id', 'GET /images', 'DELETE /images/:id']
     });
 });
-
-// 1. upload an image 
-// upload.single('image') is Multer middleware that processes a single file upload from 
-// a form field named 'image'. 
+ 
 app.post('/upload', upload.single('image'), async (req, res) => {
     try {
         if (!req.file){
@@ -66,15 +59,13 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         const mimeType = req.file.mimetype; 
         const fileSize = req.file.size; 
 
-        // get optional parameters 
         const width = parseInt(req.query.width) || null;
         const height = parseInt(req.query.height) || null;
         const quality = parseInt(req.query.quality) || 80;
 
-        let processedImage = req.file.buffer; // start with original image
+        let processedImage = req.file.buffer; 
 
         // process image if resize requested 
-        // only when width or height provided
         if (width || height){
             processedImage = await sharp(req.file.buffer) // 
                 .resize(width, height, { fit: 'cover' })
@@ -114,7 +105,6 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     }
 }); 
 
-// 2. get image by id
 app.get('/images/:id', (req, res) => {
     const image = imageMetadata.get(req.params.id);
 
@@ -125,7 +115,6 @@ app.get('/images/:id', (req, res) => {
     res.json(image);
 });
 
-// 3. get all images 
 app.get('/images', (req, res) => {
     const images = Array.from(imageMetadata.values());
 
@@ -135,7 +124,6 @@ app.get('/images', (req, res) => {
     });
 });
 
-// 4. delete image 
 app.delete('/images/:id', (req, res) => {
     const image = imageMetadata.get(req.params.id);
 
@@ -149,7 +137,6 @@ app.delete('/images/:id', (req, res) => {
         fs.unlinkSync(filepath);
     }
 
-    // delete metadata 
     imageMetadata.delete(req.params.id);
 
     res.json({ 
