@@ -60,10 +60,7 @@ async function processImage(imageBuffer, options){
     let processedImage = imageBuffer;
 
     if (options.width || options.height){
-        processedImage = await sharp(imageBuffer)
-    .resize(options.width, options.height, { fit: 'cover' })
-    .jpeg({ quality: options.quality })
-    .toBuffer();
+        processedImage = await sharp(imageBuffer).resize(options.width, options.height, { fit: 'cover' }).jpeg({ quality: options.quality }).toBuffer();
     }
     return processedImage;
 }
