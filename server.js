@@ -47,6 +47,52 @@ app.get('/health', (req, res) => {
         endpoints: ['POST /upload', 'GET /images/:id', 'GET /images', 'DELETE /images/:id']
     });
 });
+
+function getImageSize(req) {
+    return {
+        width: parseInt(req.query.width) || null,
+        height: parseInt(req.query.height) || null,
+        quality: parseInt(req.query.quality) || 80
+    };
+}
+
+async function processImage(imageBuffer, options){
+    let processedImage = imageBuffer;
+
+    if (options.width || options.height){
+        processedImage = await sharp(imageBuffer).resize(options.width, options.height, { fit: 'cover' })
+                                                .jpeg({ quality: options.quality })
+                                                .toBuffer();
+    }
+    return processedImage;
+}
+
+async function saveImageToDisk(processedImage, imageId){
+    const filename = `${imageId}.jpg`;
+    const filepath = path.join(uploadDir, filename);
+    fs.writeFileSync(filepath, processedImage);
+    
+    return { filename, filepath };
+}
+
+async function storeImagedata(file, savedFile, options, imageId) {
+    const mdata = {
+        id: imageId,
+        originalName: file.originalname,
+        filename: savedFile.filename,
+        mimeType: file.mimetype,
+        fileSize: file.size,
+        processedSize: file.processedImage?.length || file.buffer.length,
+        width: options.width || null,
+        height: options.height || null,
+        quality: options.quality,
+        url: `http://localhost:${PORT}/images/${savedFile.filename}`,
+        uploadAt: new Date().toISOString()
+    };
+    
+    imageMetadata.set(imageId, mdata);
+    return mdata;
+}
  
 app.post('/upload', upload.single('image'), async (req, res) => {
     try {
@@ -55,47 +101,15 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         }
 
         const imageId = uuidv4(); // generates a unique random identifier (UUID v4)
-        const originalName = req.file.originalname; 
-        const mimeType = req.file.mimetype; 
-        const fileSize = req.file.size; 
-
-        const width = parseInt(req.query.width) || null;
-        const height = parseInt(req.query.height) || null;
-        const quality = parseInt(req.query.quality) || 80;
-
-        let processedImage = req.file.buffer; 
-
-        // process image if resize requested 
-        if (width || height){
-            processedImage = await sharp(req.file.buffer) // 
-                .resize(width, height, { fit: 'cover' })
-                .jpeg({ quality: quality })
-                .toBuffer();
-        }
-
-        // save to disk with unique name 
-        const filename = `${imageId}.jpg`;
-        const filepath = path.join(uploadDir, filename);
-        fs.writeFileSync(filepath, processedImage);
-
-        // store metadata 
-        imageMetadata.set(imageId, {
-            id: imageId,
-            originalName, 
-            filename, 
-            mimeType, 
-            fileSize,
-            processedSize: processedImage.length, 
-            width: width || null, 
-            height: height || null, 
-            quality, 
-            url: `http://localhost:${PORT}/images/${filename}`,
-            uploadAt: new Date().toISOString()
-        });
+        const imageOptions = getImageSize(req);
+        const processedImage = await processImage(req.file.buffer, imageOptions);
+        const savedFile = await saveImageToDisk(processedImage, imageId);
+        
+        const mData = await storeImagedata(req.file, savedFile, imageOptions, imageId);
 
         res.json({
             success: true, 
-            image: imageMetadata.get(imageId),
+            image: mData,
             message: 'Image uploaded successfully'
         });
 
